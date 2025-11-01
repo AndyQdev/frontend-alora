@@ -1,0 +1,1 @@
+export type Order = { id: string; code: string; total: number; };
