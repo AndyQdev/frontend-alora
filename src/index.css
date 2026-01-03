@@ -1,72 +1,173 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
- 
-
 
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 224 71.4% 4.1%;
+    --foreground: 222 47% 11%;
+
     --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
+    --card-foreground: 222 47% 11%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
-    --primary: 262.1 83.3% 57.8%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
-    --accent: 220 14.3% 95.9%;
-    --accent-foreground: 220.9 39.3% 11%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 262.1 83.3% 57.8%;
+    --popover-foreground: 222 47% 11%;
+
+    /* 🔵 Azul marino elegante (apenas más claro) */
+    --primary: 222 47% 16%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    /* Accent neutro (hover, popover, select) */
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 222 47% 16%;
+
     --radius: 0.65rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+
+    /* Charts sobrios */
+    --chart-1: 222 47% 16%;
+    --chart-2: 217 19% 35%;
+    --chart-3: 142 72% 45%;
+    --chart-4: 45 93% 47%;
+    --chart-5: 199 89% 48%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 222 47% 16%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 222 47% 16%;
   }
 
   .dark {
-    --background: 224 71.4% 4.1%;
-    --foreground: 210 20% 98%;
-    --card: 224 71.4% 4.1%;
-    --card-foreground: 210 20% 98%;
-    --popover: 224 71.4% 4.1%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 263.4 70% 50.4%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 215 27.9% 16.9%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 215 27.9% 16.9%;
-    --muted-foreground: 217.9 10.6% 64.9%;
-    --accent: 215 27.9% 16.9%;
-    --accent-foreground: 210 20% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --ring: 263.4 70% 50.4%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 7%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 7%;
+    --popover-foreground: 210 40% 98%;
+
+    /* 🔵 Botones claros en dark (lógica correcta) */
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 7%;
+
+    --secondary: 215 28% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --accent: 215 28% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --muted: 215 28% 17%;
+    --muted-foreground: 217 11% 65%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 28% 17%;
+    --input: 215 28% 17%;
+    --ring: 210 40% 98%;
+
+    /* Charts */
+    --chart-1: 210 40% 98%;
+    --chart-2: 217 11% 65%;
+    --chart-3: 142 72% 45%;
+    --chart-4: 45 93% 47%;
+    --chart-5: 199 89% 55%;
+
+    /* Sidebar dark */
+    --sidebar-background: 222 47% 7%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 222 47% 7%;
+    --sidebar-accent: 215 28% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 215 28% 17%;
+    --sidebar-ring: 210 40% 98%;
   }
 }
 
- 
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  [data-active="true"] {
+    @apply bg-sidebar-accent text-sidebar-accent-foreground font-medium;
+  }
+
+  .sidebar-header {
+    @apply border-b border-sidebar-border;
+  }
+
+  [data-sidebar="menu-button"]:hover:not([data-active="true"]) {
+    @apply bg-sidebar-accent/50 text-sidebar-accent-foreground transition-colors;
+  }
+
+  [data-breadcrumb-page] {
+    @apply text-sidebar-primary font-medium;
+  }
+
+  /* Animaciones suaves para collapsible */
+  @keyframes collapsible-down {
+    from {
+      height: 0;
+      opacity: 0;
+    }
+    to {
+      height: var(--radix-collapsible-content-height);
+      opacity: 1;
+    }
+  }
+
+  @keyframes collapsible-up {
+    from {
+      height: var(--radix-collapsible-content-height);
+      opacity: 1;
+    }
+    to {
+      height: 0;
+      opacity: 0;
+    }
+  }
+
+  .animate-collapsible-down {
+    animation: collapsible-down 200ms ease-out;
+  }
+
+  .animate-collapsible-up {
+    animation: collapsible-up 200ms ease-out;
+  }
+
+  /* Forzar que el carrusel respete el ancho del contenedor padre */
+  [role="region"][aria-roledescription="carousel"] {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Asegurar que el contenedor del carrusel tenga overflow hidden */
+  [role="region"][aria-roledescription="carousel"] > div {
+    overflow: hidden !important;
   }
 }

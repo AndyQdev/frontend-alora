@@ -1,0 +1,57 @@
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { apiFetch } from "@/shared/api/client";
+import type { Inventory, InventoryResponse, InventoryQueryParams } from "../model/types";
+
+export function useInventory(params: InventoryQueryParams) {
+  const searchParams = new URLSearchParams();
+  if (params.limit) searchParams.append("limit", params.limit.toString());
+  if (params.offset !== undefined) searchParams.append("offset", params.offset.toString());
+  if (params.order) searchParams.append("order", params.order);
+  if (params.attr) searchParams.append("attr", params.attr);
+  if (params.value) searchParams.append("value", params.value);
+  if (params.storeId) searchParams.append("storeId", params.storeId);
+
+  return useQuery<InventoryResponse>({
+    queryKey: ["inventory", params],
+    queryFn: async () => {
+      const response = await apiFetch<Inventory[]>(`/api/inventory?${searchParams.toString()}`);
+      return {
+        statusCode: response.statusCode,
+        data: response.data || [],
+        countData: response.countData || 0,
+        stats: response.stats || {},
+      };
+    },
+  });
+}
+
+// Hook para scroll infinito en POS
+export function useInfiniteInventory(params: Omit<InventoryQueryParams, 'offset' | 'limit'> & { pageSize?: number }) {
+  const pageSize = params.pageSize || 8;
+  
+  return useInfiniteQuery<InventoryResponse, Error, InventoryResponse, readonly unknown[], number>({
+    queryKey: ["inventory-infinite", params],
+    queryFn: async ({ pageParam }) => {
+      const searchParams = new URLSearchParams();
+      searchParams.append("limit", pageSize.toString());
+      searchParams.append("offset", (pageParam * pageSize).toString());
+      if (params.order) searchParams.append("order", params.order);
+      if (params.attr) searchParams.append("attr", params.attr);
+      if (params.value) searchParams.append("value", params.value);
+      if (params.storeId) searchParams.append("storeId", params.storeId);
+
+      const response = await apiFetch<Inventory[]>(`/api/inventory?${searchParams.toString()}`);
+      return {
+        statusCode: response.statusCode,
+        data: response.data || [],
+        countData: response.countData || 0,
+        stats: response.stats || {},
+      };
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const totalFetched = allPages.reduce((acc, page) => acc + page.data.length, 0);
+      return totalFetched < lastPage.countData ? allPages.length : undefined;
+    },
+    initialPageParam: 0,
+  });
+}

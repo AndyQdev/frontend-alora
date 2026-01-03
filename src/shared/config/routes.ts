@@ -1,6 +1,14 @@
 export const routes = {
+  // Auth
   login: "/login",
   register: "/register",
+  
+  // Main views (orden por frecuencia de uso según doc)
+  caja: "/caja",
+  orders: "/orders",
+  products: "/products",
   inventory: "/inventory",
-  orders: "/orders"
+  customers: "/customers",
+  reports: "/reports",
+  settings: "/settings"
 } as const;
