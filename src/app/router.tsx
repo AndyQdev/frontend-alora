@@ -4,8 +4,11 @@ import RegisterPage from "@/pages/register";
 import CajaPage from "@/pages/caja";
 import OrdersPage from "@/pages/orders";
 import ProductsPage from "@/pages/products";
+import CreateProductPage from "@/pages/products/create";
 import InventoryPage from "@/pages/inventory";
 import CustomersPage from "@/pages/customers";
+import { StoresPage } from "@/pages/stores";
+import { StoreConfigPage } from "@/pages/stores/config";
 import ReportsPage from "@/pages/reports";
 import SettingsPage from "@/pages/settings";
 import LayoutShell from "@/widgets/layout/LayoutShell";
@@ -42,8 +45,12 @@ export default function AppRouter() {
           <Route path="/caja" element={<CajaPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/products" element={<ProductsPage />} />
+          <Route path="/products/create" element={<CreateProductPage />} />
+          <Route path="/products/:id" element={<CreateProductPage />} />
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/stores" element={<StoresPage />} />
+          <Route path="/stores/:id" element={<StoreConfigPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           

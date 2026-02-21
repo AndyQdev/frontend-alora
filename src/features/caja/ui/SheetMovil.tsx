@@ -1,6 +1,17 @@
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { Separator } from "@/shared/ui/separator";
+import { Tabs, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/ui/dialog";
+import { Label } from "@/shared/ui/label";
+import { Input } from "@/shared/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -16,6 +27,11 @@ import {
   Banknote,
   QrCode,
   CreditCard,
+  Zap,
+  Truck,
+  Calendar,
+  MapPin,
+  DollarSign,
 } from "lucide-react";
 import { type Customer } from "@/entities/customer";
 import { ComboBoxClient } from "./ComboBoxClient";
@@ -32,6 +48,7 @@ interface Product {
 
 interface CartItem {
   id: string;
+  storeProductId: string; // ID del StoreProduct desde inventory
   name: string;
   price: number;
   quantity: number;
@@ -73,6 +90,13 @@ interface SheetMovileCartProps {
     name: string;
     icon: any;
   }>;
+  
+  // Tipo de venta
+  saleType: 'quick' | 'installment' | 'delivery';
+  setSaleType: (type: 'quick' | 'installment' | 'delivery') => void;
+  
+  // Total para cálculos
+  total: number;
 }
 
 export function SheetMovileCart({
@@ -97,17 +121,35 @@ export function SheetMovileCart({
   paymentMethod,
   setPaymentMethod,
   paymentMethods,
+  saleType,
+  setSaleType,
+  total,
 }: SheetMovileCartProps) {
   // Calcular totales
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const total = subtotal;
+  const subtotal = total;
 
   return (
     <Sheet open={cartSheetOpen} onOpenChange={setCartSheetOpen}>
       <SheetContent side="right" className="w-full sm:w-[400px] p-0 flex flex-col">
-        <SheetHeader className="px-4 pt-6 pb-4">
-          <SheetTitle className="text-left">Carrito de Compras</SheetTitle>
-        </SheetHeader>
+        {/* Tabs de tipo de venta */}
+        <div className="px-1 pb-1 pt-4">
+          <Tabs value={saleType} onValueChange={(value) => setSaleType(value as any)}>
+            <TabsList className="grid w-full grid-cols-3 h-9">
+              <TabsTrigger value="quick" className="text-xs px-2">
+                <Zap className="h-3.5 w-3.5 mr-1.5" />
+                Rápida
+              </TabsTrigger>
+              <TabsTrigger value="installment" className="text-xs px-2">
+                <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                Cuota
+              </TabsTrigger>
+              <TabsTrigger value="delivery" className="text-xs px-2">
+                <Truck className="h-3.5 w-3.5 mr-1.5" />
+                Delivery
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* Contenido del carrito (reutilizando la misma estructura) */}
         <div className="flex-1 flex flex-col overflow-hidden">

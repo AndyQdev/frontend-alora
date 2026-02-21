@@ -1,3 +1,5 @@
+import { OrdersTable } from "@/features/orders/ui";
+
 export default function OrdersPage() {
-  return <div className="text-xl font-semibold">🧾 Órdenes</div>;
+  return <OrdersTable />;
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useProducts, useCategories, useBrands, useDeleteProduct } from "@/entities/product/api";
 import type { Product } from "@/entities/product/model/types";
 import {
@@ -42,6 +43,7 @@ import {
 import { toast } from "sonner";
 
 export function ProductsDataTable() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedBrand, setSelectedBrand] = useState("all");
@@ -141,7 +143,7 @@ export function ProductsDataTable() {
             Gestiona tu catálogo de productos
           </p>
         </div>
-        <Button>
+        <Button onClick={() => navigate("/products/create")}>
           <Plus className="mr-2 h-4 w-4" />
           Crear Producto
         </Button>
@@ -421,7 +423,12 @@ export function ProductsDataTable() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => navigate(`/products/${product.id}`)}
+                  >
                     <Edit className="h-3 w-3 mr-1" />
                     Editar
                   </Button>
@@ -518,7 +525,7 @@ export function ProductsDataTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/products/${product.id}`)}>
                           <Edit className="mr-2 h-4 w-4" />
                           Editar
                         </DropdownMenuItem>

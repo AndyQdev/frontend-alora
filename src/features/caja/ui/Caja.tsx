@@ -20,7 +20,6 @@ import {
   Beef,
   Sandwich,
   QrCode,
-  Building2,
   Filter,
   ScanLine,
   ChevronLeft,
@@ -33,14 +32,30 @@ import {
   Sparkles,
   ShoppingBag,
   Cookie,
+  Zap,
+  Truck,
+  Calendar,
+  MapPin,
+  DollarSign,
   type LucideIcon
 } from "lucide-react";
 import { Separator } from "@/shared/ui/separator";
 import { Skeleton } from "@/shared/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/shared/ui/dialog";
+import { Label } from "@/shared/ui/label";
 import { toast } from "sonner";
 import { useCustomers, useCreateCustomer, type Customer } from "@/entities/customer";
 import { useInfiniteInventory } from "@/entities/inventory/api";
 import { useCategories } from "@/entities/product/api";
+import { useCreateOrder, OrderType } from "@/entities/order";
 import { useStore } from "@/app/providers/auth";
 import { ComboBoxClient, CreateClientModal, SheetMovileCart } from "./";
 
@@ -80,6 +95,7 @@ const PAYMENT_METHODS = [
 
 interface CartItem {
   id: string;
+  storeProductId: string; // ID del StoreProduct desde inventory
   name: string;
   price: number;
   quantity: number;
@@ -95,17 +111,28 @@ export default function Caja() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
-  // Fetch de categorías del backend
-  const { data: categoriesResponse, isLoading: categoriesLoading } = useCategories();
+  // Fetch de categorías del backend con filtro por tienda
+  const { data: categoriesResponse, isLoading: categoriesLoading } = useCategories(
+    selectedStore === "all" ? undefined : selectedStore?.id
+  );
   const backendCategories: any[] = categoriesResponse || [];
 
-  // Construir array de categorías con iconos
+  // Construir array de categorías con iconos y conteos
   const CATEGORIES = useMemo(() => {
-    const allCategory = { id: 'all', name: "Todos", icon: Grid3x3 };
+    // Categoría "Todos" con conteo total de productos
+    const totalProductCount = backendCategories.reduce((sum, cat) => sum + (cat.productCount || 0), 0);
+    const allCategory = { 
+      id: 'all', 
+      name: "Todos", 
+      icon: Grid3x3,
+      productCount: totalProductCount
+    };
+    
     const mappedCategories = backendCategories.map((cat: any) => ({
       id: cat.id,
       name: cat.name,
-      icon: getCategoryIcon(cat.name, cat.icon)
+      icon: getCategoryIcon(cat.name, cat.icon),
+      productCount: cat.productCount || 0
     }));
     return [allCategory, ...mappedCategories];
   }, [backendCategories]);
@@ -113,7 +140,7 @@ export default function Caja() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [showOnlyInStock, setShowOnlyInStock] = useState(false);
   const categoriesRef = useRef<HTMLDivElement>(null);
-
+  console.log('Caja:', cart);
   // Determinar storeId basado en la tienda seleccionada
   const storeId = selectedStore === "all" ? "all" : (selectedStore?.id || "all");
 
@@ -129,6 +156,7 @@ export default function Caja() {
     storeId,
     pageSize: 8,
     ...(debouncedSearch && { attr: "product.name", value: debouncedSearch }),
+    ...(selectedCategory !== "all" && { categoryId: selectedCategory }),
   });
 
   // Debounce del término de búsqueda
@@ -148,6 +176,26 @@ export default function Caja() {
   
   // Estado para Sheet del carrito en móvil
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
+  
+  // Estado para tipo de venta
+  const [saleType, setSaleType] = useState<'quick' | 'installment' | 'delivery'>('quick');
+  
+  // Estados para modal de cuota
+  const [showInstallmentModal, setShowInstallmentModal] = useState(false);
+  const [installmentData, setInstallmentData] = useState({
+    initialPayment: '',
+    numberOfInstallments: '2',
+    installmentAmount: '0',
+    nextPaymentDate: '',
+  });
+  
+  // Estados para modal de delivery
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [deliveryData, setDeliveryData] = useState({
+    address: '',
+    deliveryCost: '',
+    notes: '',
+  });
 
   // Hooks de clientes
   const { data: customersData, isLoading: isLoadingClients } = useCustomers({
@@ -156,6 +204,7 @@ export default function Caja() {
     value: clientSearch.trim() || undefined,
   });
   const createCustomerMutation = useCreateCustomer();
+  const createOrderMutation = useCreateOrder();
 
   // Clientes filtrados para el dropdown
   const displayedClients = useMemo(() => {
@@ -177,6 +226,7 @@ export default function Caja() {
     return pages.flatMap((page: any) => 
       page.data.map((inventory: any) => ({
         id: inventory.id,
+        storeProductId: inventory.storeProductId, // ID del StoreProduct
         name: inventory.product.name,
         price: inventory.product.price || 0,
         stock: inventory.stockQuantity,
@@ -220,11 +270,10 @@ export default function Caja() {
     };
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  // Contar productos por categoría
+  // Contar productos por categoría (ahora viene del backend)
   const getProductCountByCategory = (categoryId: string) => {
-    if (categoryId === "all") return allProducts.length;
-    // TODO: Cuando el backend envíe categoryId en inventory, filtrar por eso
-    return allProducts.length; // Por ahora retornar todos
+    const category = CATEGORIES.find(cat => cat.id === categoryId);
+    return category?.productCount || 0;
   };
 
   // Filtrar productos (por ahora solo por stock, búsqueda y categoría se harán en el backend)
@@ -263,6 +312,7 @@ export default function Caja() {
     } else {
       setCart([...cart, {
         id: product.id,
+        storeProductId: product.storeProductId, // Guardar storeProductId
         name: product.name,
         price: product.price,
         quantity: 1,
@@ -325,15 +375,177 @@ export default function Caja() {
       return;
     }
     
-    // TODO: Aquí irá la lógica real de crear order
-    alert(`Venta finalizada!\nTotal: Bs. ${total.toFixed(2)}\nMétodo: ${paymentMethod === 'cash' ? 'Efectivo' : 'Tarjeta'}`);
-    setCart([]);
+    // Abrir modal según el tipo de venta
+    if (saleType === 'installment') {
+      setShowInstallmentModal(true);
+    } else if (saleType === 'delivery') {
+      setShowDeliveryModal(true);
+    } else {
+      // Venta rápida - procesar directamente
+      processQuickSale();
+    }
   };
+  
+  // Procesar venta rápida
+  const processQuickSale = async () => {
+    if (!selectedClient || !selectedStore || selectedStore === "all") {
+      toast.error("Selecciona un cliente y tienda válidos");
+      return;
+    }
 
-  const getStockBadge = (stock: number) => {
-    if (stock === 0) return <Badge variant="destructive" className="text-xs">Agotado</Badge>;
-    if (stock < 10) return <Badge className="bg-orange-500 hover:bg-orange-600 text-xs">Quedan {stock}</Badge>;
-    return <Badge className="bg-emerald-500 hover:bg-emerald-600 text-xs">Stock: {stock}</Badge>;
+    try {
+      await createOrderMutation.mutateAsync({
+        totalAmount: total,
+        type: OrderType.QUICK,
+        paymentMethod: paymentMethod,
+        paymentDate: new Date().toISOString(),
+        totalReceived: total,
+        storeId: selectedStore.id,
+        customerId: selectedClient.id,
+        items: cart.map(item => ({
+          storeProductId: item.storeProductId, // ID del StoreProduct desde inventory
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      });
+
+      toast.success(`Venta rápida finalizada! Total: Bs. ${total.toFixed(2)}`);
+      setCart([]);
+      setSelectedClient(null);
+    } catch (error) {
+      // El error ya se muestra en el hook useCreateOrder
+      console.error('Error en venta rápida:', error);
+    }
+  };
+  
+  // Procesar venta a cuotas
+  const processInstallmentSale = async () => {
+    const initialPayment = parseFloat(installmentData.initialPayment);
+    if (!initialPayment || initialPayment <= 0) {
+      toast.error("Ingresa el pago inicial");
+      return;
+    }
+    if (initialPayment > total) {
+      toast.error("El pago inicial no puede ser mayor al total");
+      return;
+    }
+    if (!installmentData.nextPaymentDate) {
+      toast.error("Selecciona la fecha del próximo pago");
+      return;
+    }
+    
+    if (!selectedClient || !selectedStore || selectedStore === "all") {
+      toast.error("Selecciona un cliente y tienda válidos");
+      return;
+    }
+
+    try {
+      await createOrderMutation.mutateAsync({
+        totalAmount: total,
+        type: OrderType.INSTALLMENT,
+        paymentMethod: paymentMethod,
+        paymentDate: new Date().toISOString(),
+        totalReceived: initialPayment,
+        installmentInfo: {
+          numberOfInstallments: parseInt(installmentData.numberOfInstallments),
+          nextPaymentDate: installmentData.nextPaymentDate,
+        },
+        storeId: selectedStore.id,
+        customerId: selectedClient.id,
+        items: cart.map(item => ({
+          storeProductId: item.storeProductId, // ID del StoreProduct desde inventory
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      });
+
+      toast.success(`Venta a cuotas registrada! Pago inicial: Bs. ${initialPayment.toFixed(2)}`);
+      setCart([]);
+      setSelectedClient(null);
+      setShowInstallmentModal(false);
+      setInstallmentData({
+        initialPayment: '',
+        numberOfInstallments: '2',
+        installmentAmount: '0',
+        nextPaymentDate: '',
+      });
+    } catch (error) {
+      // El error ya se muestra en el hook useCreateOrder
+      console.error('Error en venta a cuotas:', error);
+    }
+  };
+  
+  // Procesar venta con delivery
+  const processDeliverySale = async () => {
+    if (!deliveryData.address.trim()) {
+      toast.error("Ingresa la dirección de entrega");
+      return;
+    }
+    const deliveryCost = parseFloat(deliveryData.deliveryCost);
+    if (!deliveryCost || deliveryCost <= 0) {
+      toast.error("Ingresa el costo de delivery");
+      return;
+    }
+    
+    if (!selectedClient || !selectedStore || selectedStore === "all") {
+      toast.error("Selecciona un cliente y tienda válidos");
+      return;
+    }
+    
+    const totalWithDelivery = total + deliveryCost;
+
+    try {
+      await createOrderMutation.mutateAsync({
+        totalAmount: totalWithDelivery,
+        type: OrderType.DELIVERY,
+        paymentMethod: paymentMethod,
+        paymentDate: new Date().toISOString(),
+        totalReceived: totalWithDelivery,
+        deliveryInfo: {
+          address: deliveryData.address,
+          cost: deliveryCost,
+          notes: deliveryData.notes || undefined,
+        },
+        storeId: selectedStore.id,
+        customerId: selectedClient.id,
+        items: cart.map(item => ({
+          storeProductId: item.storeProductId, // ID del StoreProduct desde inventory
+          quantity: item.quantity,
+          price: item.price,
+        })),
+      });
+
+      toast.success(`Pedido con delivery registrado! Total: Bs. ${totalWithDelivery.toFixed(2)}`);
+      setCart([]);
+      setSelectedClient(null);
+      setShowDeliveryModal(false);
+      setDeliveryData({
+        address: '',
+        deliveryCost: '',
+        notes: '',
+      });
+    } catch (error) {
+      // El error ya se muestra en el hook useCreateOrder
+      console.error('Error en venta con delivery:', error);
+    }
+  };
+  
+  // Calcular monto de cuota cuando cambia el pago inicial o número de cuotas
+  useEffect(() => {
+    const initialPayment = parseFloat(installmentData.initialPayment) || 0;
+    const remaining = total - initialPayment;
+    const installments = parseInt(installmentData.numberOfInstallments) || 1;
+    const installmentAmount = remaining / installments;
+    setInstallmentData(prev => ({
+      ...prev,
+      installmentAmount: installmentAmount.toFixed(2),
+    }));
+  }, [installmentData.initialPayment, installmentData.numberOfInstallments, total]);
+
+  const getStockIndicator = (stock: number) => {
+    if (stock === 0) return { color: 'bg-red-500', text: 'Agotado', textColor: 'text-red-600' };
+    if (stock < 10) return { color: 'bg-orange-500', text: `${stock} disponibles`, textColor: 'text-orange-600' };
+    return { color: 'bg-emerald-500', text: `Stock: ${stock}`, textColor: 'text-emerald-600' };
   };
 
   return (
@@ -455,7 +667,9 @@ export default function Caja() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 pb-4">
-                {filteredProducts.map(product => (
+                {filteredProducts.map(product => {
+                    const stockInfo = getStockIndicator(product.stock);
+                    return (
                     <Card
                     key={product.id}
                     className={`group relative overflow-hidden transition-all duration-200 ${
@@ -465,7 +679,7 @@ export default function Caja() {
                     }`}
                     onClick={() => addToCart(product)}
                     >
-                    <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 overflow-hidden">
+                    <div className="aspect-square bg-gradient-to-br from-muted to-muted/50 overflow-hidden relative">
                         <img
                         src={product.imageUrl}
                         alt={product.name}
@@ -476,16 +690,22 @@ export default function Caja() {
                             <span className="text-white font-bold text-lg">AGOTADO</span>
                         </div>
                         )}
+                        {/* Dot indicador de stock en esquina superior izquierda */}
+                        <div className="absolute top-2 left-2">
+                          <div className={`h-2.5 w-2.5 rounded-full ${stockInfo.color} ring-2 ring-white shadow-sm`} />
+                        </div>
                     </div>
                     <div className="p-3">
                         <h3 className="font-semibold text-sm mb-1.5 line-clamp-2 min-h-[2.5rem]">
                         {product.name}
                         </h3>
-                        <div className="flex items-center justify-between">
-                        <p className="text-xl font-bold text-emerald-600">
+                        <div className="space-y-0.5">
+                          <p className="text-xl font-bold text-emerald-600">
                             Bs. {product.price.toFixed(2)}
-                        </p>
-                        {getStockBadge(product.stock)}
+                          </p>
+                          <p className={`text-[10px] font-medium ${stockInfo.textColor}`}>
+                            {stockInfo.text}
+                          </p>
                         </div>
                     </div>
                     {product.stock > 0 && (
@@ -496,7 +716,8 @@ export default function Caja() {
                         </div>
                     )}
                     </Card>
-))}
+                    );
+                })}
                 
                 {/* Skeletons para infinite scroll */}
                 {isFetchingNextPage && (
@@ -541,10 +762,30 @@ export default function Caja() {
         </div>
 
         {/* Panel del Carrito */}
-        <div className="bg-white border-l rounded-tl-3xl rounded-bl-3xl overflow-hidden hidden lg:block">
-            <div className="h-full flex flex-col overflow-hidden">
+        <div className="bg-white border-l rounded-tl-3xl rounded-bl-3xl overflow-hidden hidden lg:block relative">
+            {/* Tabs de tipo de venta - Pegados arriba */}
+            <div className="absolute top-0 left-0 right-0 z-10 bg-white border-b px-2 pt-2 pb-1 rounded-tl-3xl">
+              <Tabs value={saleType} onValueChange={(value) => setSaleType(value as any)}>
+                <TabsList className="grid w-full grid-cols-3 h-9">
+                  <TabsTrigger value="quick" className="text-xs px-2">
+                    <Zap className="h-3.5 w-3.5 mr-1.5" />
+                    Rápida
+                  </TabsTrigger>
+                  <TabsTrigger value="installment" className="text-xs px-2">
+                    <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                    Cuota
+                  </TabsTrigger>
+                  <TabsTrigger value="delivery" className="text-xs px-2">
+                    <Truck className="h-3.5 w-3.5 mr-1.5" />
+                    Delivery
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            
+            <div className="h-full flex flex-col overflow-hidden pt-12">
             {/* Header del carrito */}
-            <div className="px-4 lg:px-6 pt-4 lg:pt-6 pb-3 lg:pb-4 bg-white">
+            <div className="px-4 lg:px-6 pt-2 pb-3 lg:pb-4 bg-white">
                 {/* Select de cliente con botón de limpiar carrito */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
@@ -768,6 +1009,9 @@ export default function Caja() {
         paymentMethod={paymentMethod}
         setPaymentMethod={setPaymentMethod}
         paymentMethods={PAYMENT_METHODS}
+        saleType={saleType}
+        setSaleType={setSaleType}
+        total={total}
       />
 
       {/* Modal de crear cliente */}
@@ -778,6 +1022,195 @@ export default function Caja() {
         isCreating={createCustomerMutation.isPending}
         initialName={prefilledClientName}
       />
+      
+      {/* Modal de Venta a Cuotas */}
+      <Dialog open={showInstallmentModal} onOpenChange={setShowInstallmentModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-emerald-600" />
+              Venta a Cuotas
+            </DialogTitle>
+            <DialogDescription>
+              Configura el plan de pagos para este pedido
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Total */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-emerald-900">Total del pedido</span>
+                <span className="text-xl font-bold text-emerald-600">Bs. {total.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            {/* Pago Inicial */}
+            <div className="space-y-2">
+              <Label htmlFor="initialPayment" className="flex items-center gap-1.5">
+                <DollarSign className="h-3.5 w-3.5" />
+                Pago Inicial
+              </Label>
+              <Input
+                id="initialPayment"
+                type="number"
+                placeholder="0.00"
+                value={installmentData.initialPayment}
+                onChange={(e) => setInstallmentData(prev => ({ ...prev, initialPayment: e.target.value }))}
+                step="0.01"
+                min="0"
+                max={total}
+              />
+            </div>
+            
+            {/* Número de Cuotas */}
+            <div className="space-y-2">
+              <Label htmlFor="installments">Número de Cuotas</Label>
+              <select
+                id="installments"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={installmentData.numberOfInstallments}
+                onChange={(e) => setInstallmentData(prev => ({ ...prev, numberOfInstallments: e.target.value }))}
+              >
+                <option value="2">2 cuotas</option>
+                <option value="3">3 cuotas</option>
+                <option value="4">4 cuotas</option>
+                <option value="6">6 cuotas</option>
+                <option value="12">12 cuotas</option>
+              </select>
+            </div>
+            
+            {/* Monto por Cuota */}
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Monto por cuota</span>
+                <span className="text-lg font-bold">Bs. {installmentData.installmentAmount}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Saldo restante: Bs. {(total - (parseFloat(installmentData.initialPayment) || 0)).toFixed(2)}
+              </p>
+            </div>
+            
+            {/* Fecha del Próximo Pago */}
+            <div className="space-y-2">
+              <Label htmlFor="nextPaymentDate">Fecha del Próximo Pago</Label>
+              <Input
+                id="nextPaymentDate"
+                type="date"
+                value={installmentData.nextPaymentDate}
+                onChange={(e) => setInstallmentData(prev => ({ ...prev, nextPaymentDate: e.target.value }))}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowInstallmentModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={processInstallmentSale} className="bg-emerald-600 hover:bg-emerald-700">
+              Confirmar Venta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal de Delivery */}
+      <Dialog open={showDeliveryModal} onOpenChange={setShowDeliveryModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-emerald-600" />
+              Pedido con Delivery
+            </DialogTitle>
+            <DialogDescription>
+              Completa la información de entrega
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Total del Pedido */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-emerald-900">Total del pedido</span>
+                <span className="text-lg font-bold text-emerald-600">Bs. {total.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            {/* Dirección de Entrega */}
+            <div className="space-y-2">
+              <Label htmlFor="address" className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" />
+                Dirección de Entrega
+              </Label>
+              <Input
+                id="address"
+                placeholder="Calle, número, zona..."
+                value={deliveryData.address}
+                onChange={(e) => setDeliveryData(prev => ({ ...prev, address: e.target.value }))}
+              />
+            </div>
+            
+            {/* Costo de Delivery */}
+            <div className="space-y-2">
+              <Label htmlFor="deliveryCost" className="flex items-center gap-1.5">
+                <DollarSign className="h-3.5 w-3.5" />
+                Costo de Delivery
+              </Label>
+              <Input
+                id="deliveryCost"
+                type="number"
+                placeholder="0.00"
+                value={deliveryData.deliveryCost}
+                onChange={(e) => setDeliveryData(prev => ({ ...prev, deliveryCost: e.target.value }))}
+                step="0.01"
+                min="0"
+              />
+            </div>
+            
+            {/* Notas Adicionales */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notas Adicionales (Opcional)</Label>
+              <Input
+                id="notes"
+                placeholder="Referencias, instrucciones..."
+                value={deliveryData.notes}
+                onChange={(e) => setDeliveryData(prev => ({ ...prev, notes: e.target.value }))}
+              />
+            </div>
+            
+            {/* Total con Delivery */}
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>Bs. {total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Delivery</span>
+                  <span>Bs. {(parseFloat(deliveryData.deliveryCost) || 0).toFixed(2)}</span>
+                </div>
+                <Separator className="my-1" />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Total</span>
+                  <span className="text-xl font-bold text-emerald-600">
+                    Bs. {(total + (parseFloat(deliveryData.deliveryCost) || 0)).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowDeliveryModal(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={processDeliverySale} className="bg-emerald-600 hover:bg-emerald-700">
+              Confirmar Pedido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

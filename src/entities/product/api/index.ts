@@ -29,11 +29,31 @@ export function useProducts(params: ProductQueryParams = {}) {
   });
 }
 
-export function useCategories() {
-  return useQuery<Category[]>({
-    queryKey: ["categories"],
+export function useProduct(id: string | undefined) {
+  return useQuery<Product>({
+    queryKey: ["product", id],
     queryFn: async () => {
-      const response = await apiFetch<Category[]>('/api/category');
+      if (!id) throw new Error("Product ID is required");
+      const response = await apiFetch<Product>(`/api/product/${id}`);
+      return response.data as Product;
+    },
+    enabled: !!id, // Solo ejecuta la query si hay un ID
+  });
+}
+
+export function useCategories(storeId?: string) {
+  const queryParams = new URLSearchParams();
+  if (storeId && storeId !== 'all') {
+    queryParams.append('storeId', storeId);
+  }
+
+  return useQuery<Category[]>({
+    queryKey: ["categories", storeId],
+    queryFn: async () => {
+      const url = queryParams.toString() 
+        ? `/api/category?${queryParams.toString()}` 
+        : '/api/category';
+      const response = await apiFetch<Category[]>(url);
       return response.data || [];
     }
   });
@@ -80,3 +100,26 @@ export function useDeleteProduct() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["products"] })
   });
 }
+
+export function useCreateCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { name: string; description?: string; storeId: string }) => {
+      const response = await apiFetch<Category>("/api/category", { method: "POST", body: data });
+      return response.data as Category;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] })
+  });
+}
+
+export function useCreateBrand() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { name: string; description?: string; storeId: string }) => {
+      const response = await apiFetch<Brand>("/api/brand", { method: "POST", body: data });
+      return response.data as Brand;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["brands"] })
+  });
+}
+

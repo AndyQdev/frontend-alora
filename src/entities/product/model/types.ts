@@ -16,6 +16,8 @@ export interface Category {
   name: string;
   description?: string;
   enabled: boolean;
+  icon?: string | null;
+  productCount?: number; // Conteo de productos de la categoría
 }
 
 export interface Product {

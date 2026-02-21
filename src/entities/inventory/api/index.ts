@@ -39,6 +39,7 @@ export function useInfiniteInventory(params: Omit<InventoryQueryParams, 'offset'
       if (params.attr) searchParams.append("attr", params.attr);
       if (params.value) searchParams.append("value", params.value);
       if (params.storeId) searchParams.append("storeId", params.storeId);
+      if (params.categoryId) searchParams.append("categoryId", params.categoryId);
 
       const response = await apiFetch<Inventory[]>(`/api/inventory?${searchParams.toString()}`);
       return {

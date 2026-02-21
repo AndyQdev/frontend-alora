@@ -7,6 +7,7 @@ import {
   BarChart3,
   Settings,
   ClipboardList,
+  Store,
 } from "lucide-react"
 
 import { NavMain } from "@/widgets/layout/nav-main"
@@ -19,16 +20,22 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/shared/ui/sidebar"
+import { useStore } from "@/app/providers/auth"
 
 // Datos de ejemplo para el usuario - Luego esto vendrá del backend
-const data = {
+const userData = {
   user: {
     name: "Usuario Demo",
     email: "usuario@ecommerce.com",
     avatar: "/avatars/user.jpg",
   },
+}
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { selectedStore } = useStore()
+
   // Navegación principal según vistas.md (orden por frecuencia de uso)
-  navMain: [
+  const navMain = [
     {
       title: "Caja",
       url: "/caja",
@@ -55,6 +62,12 @@ const data = {
       url: "/customers",
       icon: Users,
     },
+    // Entrada dinámica para Tienda/Tiendas
+    {
+      title: selectedStore === "all" ? "Tiendas" : "Tienda",
+      url: selectedStore === "all" ? "/stores" : `/stores/${(selectedStore as any)?.id || ""}`,
+      icon: Store,
+    },
     {
       title: "Reportes",
       url: "/reports",
@@ -65,20 +78,18 @@ const data = {
       url: "/settings",
       icon: Settings,
     },
-  ],
-}
+  ]
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <StoreSwitcher />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={userData.user} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

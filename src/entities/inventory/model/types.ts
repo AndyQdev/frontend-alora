@@ -39,4 +39,5 @@ export interface InventoryQueryParams {
   attr?: string;
   value?: string;
   storeId?: string;
+  categoryId?: string; // Filtrar por categoría
 }
