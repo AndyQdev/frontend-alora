@@ -8,6 +8,7 @@ import {
   Settings,
   ClipboardList,
   Store,
+  DollarSign,
 } from "lucide-react"
 
 import { NavMain } from "@/widgets/layout/nav-main"
@@ -45,6 +46,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       title: "Pedidos",
       url: "/orders",
       icon: ClipboardList,
+    },
+    {
+      title: "Ventas",
+      url: "/sales",
+      icon: DollarSign,
     },
     {
       title: "Productos",

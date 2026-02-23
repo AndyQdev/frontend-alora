@@ -9,7 +9,7 @@ interface OrderDetailsModalProps {
   onClose: () => void;
 }
 
-export function OrderDetailsModal({ order, open, onClose }: OrderDetailsModalProps) {
+export function SalesDetailsModal({ order, open, onClose }: OrderDetailsModalProps) {
   if (!order) return null;
 
   const getStatusBadge = (status: string) => {

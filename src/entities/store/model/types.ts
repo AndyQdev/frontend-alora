@@ -23,10 +23,18 @@ export interface StoreConfig {
     email?: string;
     address?: string;
     city?: string;
+    coordinates?: {
+      latitude: number;
+      longitude: number;
+    };
   };
   socialMedia?: {
     facebookUrl?: string;
     instagramUrl?: string;
+  };
+  delivery?: {
+    type: 'pending' | 'free' | 'fixed' | 'calculated';
+    value: number;
   };
   aboutUs?: string;
   features?: object;

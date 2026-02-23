@@ -691,9 +691,9 @@ export default function Caja() {
                         </div>
                         )}
                         {/* Dot indicador de stock en esquina superior izquierda */}
-                        <div className="absolute top-2 left-2">
+                        {/* <div className="absolute top-2 left-2">
                           <div className={`h-2.5 w-2.5 rounded-full ${stockInfo.color} ring-2 ring-white shadow-sm`} />
-                        </div>
+                        </div> */}
                     </div>
                     <div className="p-3">
                         <h3 className="font-semibold text-sm mb-1.5 line-clamp-2 min-h-[2.5rem]">

@@ -11,6 +11,7 @@ import { useUpdateStore } from "@/entities/store/api";
 import { apiFetch } from "@/shared/api/client";
 import type { Store, StoreConfig } from "@/entities/store/model/types";
 import { toast } from "sonner";
+import { LocationPicker } from "@/shared/ui/LocationPicker";
 
 interface StoreConfigFormProps {
   store: Store;
@@ -296,6 +297,79 @@ export function StoreConfigForm({ store, onUpdate }: StoreConfigFormProps) {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-4 border-t pt-4">
+              <h4 className="font-medium">Configuración de Envío</h4>
+              
+              <div>
+                <Label htmlFor="deliveryType">Tipo de Envío</Label>
+                <Select
+                  value={formData.config?.delivery?.type || "pending"}
+                  onValueChange={(value: 'pending' | 'free' | 'fixed' | 'calculated') => {
+                    // Establecer valor por defecto según el tipo
+                    const defaultValue = value === 'free' ? 0 : 
+                                       value === 'fixed' ? (formData.config?.delivery?.value || 10) : 
+                                       0;
+                    handleConfigChange("delivery", "type", value);
+                    handleConfigChange("delivery", "value", defaultValue);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona tipo de envío" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Por Definir</SelectItem>
+                    <SelectItem value="free">Gratis</SelectItem>
+                    <SelectItem value="fixed">Valor Fijo</SelectItem>
+                    <SelectItem value="calculated">Calculado (Por Distancia)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formData.config?.delivery?.type === 'pending' && 'El costo de envío se definirá más adelante'}
+                  {formData.config?.delivery?.type === 'free' && 'No se cobrará por el envío'}
+                  {formData.config?.delivery?.type === 'fixed' && 'Se aplicará un costo fijo a todos los pedidos'}
+                  {formData.config?.delivery?.type === 'calculated' && 'El costo se calculará automáticamente según la distancia'}
+                </p>
+              </div>
+
+              {/* Campo de valor fijo - solo visible cuando type es "fixed" */}
+              {formData.config?.delivery?.type === 'fixed' && (
+                <div>
+                  <Label htmlFor="deliveryValue">Costo de Envío ({formData.config?.currency || 'BOB'})</Label>
+                  <Input
+                    id="deliveryValue"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={formData.config?.delivery?.value || 0}
+                    onChange={(e) => handleConfigChange("delivery", "value", parseFloat(e.target.value) || 0)}
+                    placeholder="Ej: 10.00"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Este monto se sumará al total de cada pedido
+                  </p>
+                </div>
+              )}
+
+              {/* Información adicional para tipo calculado */}
+              {formData.config?.delivery?.type === 'calculated' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <div className="text-blue-600 mt-0.5">ℹ️</div>
+                    <div className="text-sm text-blue-800">
+                      <p className="font-medium mb-1">Cálculo Automático por Distancia</p>
+                      <p className="text-xs text-blue-700">
+                        El sistema calculará el costo de envío usando la fórmula: <br />
+                        <code className="bg-blue-100 px-1 py-0.5 rounded">Costo Base (10 {formData.config?.currency || 'BOB'}) + (Distancia en km × 2 {formData.config?.currency || 'BOB'})</code>
+                      </p>
+                      <p className="text-xs text-blue-700 mt-2">
+                        💡 Asegúrate de haber configurado la ubicación de tu tienda en la pestaña "Contacto"
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -633,22 +707,30 @@ export function StoreConfigForm({ store, onUpdate }: StoreConfigFormProps) {
             </div>
 
             <div>
-              <Label htmlFor="address">Dirección</Label>
-              <Input
-                id="address"
-                value={formData.config?.contact?.address || ""}
-                onChange={(e) => handleConfigChange("contact", "address", e.target.value)}
-                placeholder="Av. 6 de Agosto #123"
-              />
-            </div>
-
-            <div>
               <Label htmlFor="city">Ciudad</Label>
               <Input
                 id="city"
                 value={formData.config?.contact?.city || ""}
                 onChange={(e) => handleConfigChange("contact", "city", e.target.value)}
                 placeholder="La Paz"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Ubicación de la Tienda</Label>
+              <p className="text-sm text-muted-foreground">Busca o selecciona en el mapa la ubicación de tu tienda</p>
+              <LocationPicker
+                address={formData.config?.contact?.address || ""}
+                coordinates={{
+                  lat: formData.config?.contact?.coordinates?.latitude || 0,
+                  lng: formData.config?.contact?.coordinates?.longitude || 0
+                }}
+                onAddressChange={(address) => handleConfigChange("contact", "address", address)}
+                onLocationChange={(location) => handleConfigChange("contact", "coordinates", {
+                  latitude: location.lat,
+                  longitude: location.lng
+                })}
+                theme="classic"
               />
             </div>
           </Card>

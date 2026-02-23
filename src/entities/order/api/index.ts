@@ -10,6 +10,7 @@ export function useOrders(params: OrderQueryParams = {}) {
   if (params.offset) queryParams.append('offset', params.offset.toString());
   if (params.order) queryParams.append('order', params.order);
   if (params.storeId) queryParams.append('storeId', params.storeId);
+  if (params.dateFilter) queryParams.append('dateFilter', params.dateFilter);
   if (params.attr && params.value) {
     queryParams.append('attr', params.attr);
     queryParams.append('value', params.value);

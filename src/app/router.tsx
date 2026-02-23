@@ -3,6 +3,7 @@ import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import CajaPage from "@/pages/caja";
 import OrdersPage from "@/pages/orders";
+import SalesPage from "@/pages/sales";
 import ProductsPage from "@/pages/products";
 import CreateProductPage from "@/pages/products/create";
 import InventoryPage from "@/pages/inventory";
@@ -44,6 +45,7 @@ export default function AppRouter() {
         <Route element={<LayoutShell />}>
           <Route path="/caja" element={<CajaPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/sales" element={<SalesPage />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/create" element={<CreateProductPage />} />
           <Route path="/products/:id" element={<CreateProductPage />} />

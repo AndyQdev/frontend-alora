@@ -1,1 +1,1 @@
-export default function OrderBadge(){return <span>Order</span>}
+// export default function OrderBadge(){return <span>Order</span>}

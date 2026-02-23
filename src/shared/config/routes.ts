@@ -6,6 +6,7 @@ export const routes = {
   // Main views (orden por frecuencia de uso según doc)
   caja: "/caja",
   orders: "/orders",
+  sales: "/sales",
   products: "/products",
   inventory: "/inventory",
   customers: "/customers",
